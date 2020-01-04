@@ -8,21 +8,32 @@
 #include <stdlib.h>
 #define MAX_LOADSTRING 100
 
+#define MAX_STACK_SIZE 30
+
 // 전역 변수:
 HINSTANCE hInst;                                // 현재 인스턴스입니다.
 WCHAR szTitle[MAX_LOADSTRING];                  // 제목 표시줄 텍스트입니다.
 WCHAR szWindowClass[MAX_LOADSTRING];            // 기본 창 클래스 이름입니다.
 
-char InputNum[128];
-char GetNum[128];
+char InputNum[MAX_STACK_SIZE];
+char GetNum[MAX_STACK_SIZE];
 char totalSign[10];
-char arraytemp[128];
+char arraytemp[MAX_STACK_SIZE];
 
-char TempArray[128];
-char arrayclear[128] = { 0, };
-int TempNum[128];
+char TempArray[MAX_STACK_SIZE];
+char arrayclear[MAX_STACK_SIZE] = { '\0', };
+int TempNum[MAX_STACK_SIZE];
+char TempSign[MAX_STACK_SIZE];
 
-int i;
+
+char stack[MAX_STACK_SIZE];									// Stack
+int top = -1;										// Init Stack Point
+
+int Search_n = 0;									// Search Number 
+int Search_s = 0;									// Search Sign
+
+int StackNum[MAX_STACK_SIZE];									// Get Number in Stack
+char StackSign[MAX_STACK_SIZE];								// Get Sign in Stack
 
 int k = 0;
 int arraySize;
@@ -47,49 +58,15 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     UNREFERENCED_PARAMETER(hPrevInstance);
     UNREFERENCED_PARAMETER(lpCmdLine);
 
-
-
     // TODO: 여기에 코드를 입력합니다.
 	AllocConsole();
 	freopen("CONOUT$", "wt", stdout);
 	//AttachConsole(GetCurrentProcessId());
 	//freopen("CON", "w", stdout);
 	DialogBox(hInstance, MAKEINTRESOURCE(IDD_DIALOG1), NULL, DlgProc);
-	/*
-    // 전역 문자열을 초기화합니다.
-    LoadStringW(hInstance, IDS_APP_TITLE, szTitle, MAX_LOADSTRING);
-    LoadStringW(hInstance, IDC_WIN32PROJECT1, szWindowClass, MAX_LOADSTRING);
-    //MyRegisterClass(hInstance);
 
-    // 응용 프로그램 초기화를 수행합니다.
-    if (!InitInstance (hInstance, nCmdShow))
-    {
-        return FALSE;
-    }
-
-    HACCEL hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_WIN32PROJECT1));
-
-    MSG msg;
-	
-
-    // 기본 메시지 루프입니다.
-    while (GetMessage(&msg, nullptr, 0, 0))
-    {
-        if (!TranslateAccelerator(msg.hwnd, hAccelTable, &msg))
-        {
-
-            TranslateMessage(&msg);
-            DispatchMessage(&msg);
-        }
-    }
-	
-    return (int) msg.wParam;
-	*/
 	return 0;
 }
-
-
-
 
 BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 {
@@ -109,84 +86,146 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
    return TRUE;
 }
 
-void showNum(char sign, HWND hDlg) {
-	for (; i < sizeof(InputNum); i++) {
-		if (InputNum[i + 1] == '\0') {
-			InputNum[i] =sign;
-			SetDlgItemText(hDlg, IDC_EDIT1, InputNum);
-			i++;
-			printf("InputNum : %s \n", InputNum);
-			break;
-		}
+bool IsEmpty() {
+	if (top < 0) {
+		return true;
+	}
+	else {
+		return false;
 	}
 }
 
-void showDot(char sign, HWND hDlg) {
-	for (; i < sizeof(InputNum); i++) {
-		if (InputNum[i - 1] == sign) {
-			break;
-		}
-		if (InputNum[i + 1] == '\0') {
-			InputNum[i] = sign;
-			SetDlgItemText(hDlg, IDC_EDIT1, InputNum);
-			i++;
-			printf("InputNum : %s \n", InputNum);
-			break;
-		}
+bool IsFull() {
+	if (top > MAX_STACK_SIZE) {
+		return true;
 	}
+	else {
+		return false;
+	}
+}
+
+void push(char value) {
+	if (IsFull() == true) {
+		printf("Stack is Full");
+	}
+	else {
+		stack[++top] = value;
+	}
+}
+
+char pop() {
+	if (IsEmpty() == true) {
+		printf("Stack is Empty");
+	}
+	else {
+		return stack[top--];
+	}
+}
+
+void showNum(char num, HWND hDlg) {
+	push(num);
+	SetDlgItemText(hDlg, IDC_EDIT1, stack);
+
+}
+
+void showDot(char dot, HWND hDlg) {
+	if (stack[top] == '.') {
+		return;
+	}
+	else {
+		push(dot);
+	}
+	SetDlgItemText(hDlg, IDC_EDIT1, stack);
 }
 
 void showSign(char sign, HWND hDlg) {
-	for (; i < sizeof(InputNum); i++) {
-		if((InputNum[i-1] == '+') || (InputNum[i-1] == '-') || (InputNum[i-1] == '*') || (InputNum[i-1] == '/'))
-		{
-			InputNum[i - 1] = sign;
-			SetDlgItemText(hDlg, IDC_EDIT1, InputNum);
-			printf("InputNum : %s \n", InputNum);
-			break;
-		}
-		else {
-			InputNum[i] = sign;
-			SetDlgItemText(hDlg, IDC_EDIT1, InputNum);
-			i++;
-			printf("InputNum : %s \n", InputNum);
-			break;
+	if (stack[top] == '+' || stack[top] == '-' || stack[top] == '*' || stack[top] == '/') {
+		stack[top] = sign;
+	}
+	else {
+		push(sign);
+	}
+	
+	SetDlgItemText(hDlg, IDC_EDIT1, stack);
+}
+// Get Stack Size 
+int GetStackSize() {
+	int StackSize;
+	for (int a = 0; a < sizeof(stack); a++) {
+		if (stack[a] == '\0') {
+			StackSize = a;
+			return StackSize;
 		}
 	}
 }
 
-void showOutput(HWND hDlg) {
-	GetDlgItemText(hDlg, IDC_EDIT1, GetNum, 128);
-	printf("Get Number : %s\n", GetNum);
-	int c = 0;
-	int d = 0;
-	for (int a = 0; a < sizeof(GetNum); a++)
-	{
-		if (GetNum[a] == '+' || GetNum[a] == '-' || GetNum[a] == '*' || GetNum[a] == '/') {
-			totalSign[c] = GetNum[a];
-			for (int b = 0; b < a; b++)
-			{
-				TempArray[b] = GetNum[b];
-			}
-			TempNum[d] = atoi(TempArray);
-			c++;
-			d++;
-		}
-		if (GetNum[a + 1] == '\0') {
-
-		}
-
+void InitTempArray() {
+	for (int i = 0; i < sizeof(TempArray); i++) {
+		TempArray[i] = '\0';
 	}
-	printf("totalSign :%s \n", totalSign);
-	printf("TempNum1 :%d \n", TempNum[0]);
-	printf("TempNum2 :%d \n", TempNum[1]);
+	
+}
+
+void showOutput(HWND hDlg) {
+	printf("Get Number : %s\n", stack);
+	printf("Size of Stack : %d\n", GetStackSize());
+	int StackSize = GetStackSize();
+	int tn = 0;
+	int ts = 0;
+	
+	// Search Stack
+	for (int i = 0; i < StackSize; i++) {
+		// if Stack Value is Sign 
+		if (stack[i] == '+' || stack[i] == '-' || stack[i] == '*' || stack[i] == '/') {
+			Search_s = i;
+			TempSign[ts] = stack[i];
+			for (int tp = 0; Search_n < Search_s; Search_n++, tp++) {
+				TempArray[tp] = stack[Search_n];
+			}
+			TempNum[tn] = atoi(TempArray);
+			// Initialize TempArray
+			InitTempArray();
+			if (stack[i + 1] == '\0') {
+				MessageBox(hDlg, "Wrong formula!!!", "Formula Error", MB_OK);
+			}
+			Search_n = Search_s + 1 ;
+			
+			tn++;
+			ts++;
+			
+		}
+		if (stack[i + 1] == '\0'){
+			Search_s = i + 1;
+			for (int tp = 0; Search_n < Search_s; Search_n++, tp++) {
+				TempArray[tp] = stack[Search_n];
+			}
+			TempNum[tn] = atoi(TempArray);
+			InitTempArray();
+			
+		}
+	}
+
+
+	for (int k = 0; k < MAX_STACK_SIZE; k++) {
+		printf("Number in Stack  : %d \n", TempNum[k]);
+		printf("Sign in Stack : %c \n", TempSign[k]);
+		if (TempNum[k] == '\0' && TempSign[k] == '\0')
+		{
+			break;
+		}
+	}
+	
+
+	
+
+
 }
 
 void ClearArray(HWND hDlg) {
 	for (int a = 0; a < sizeof(InputNum); a++) {
 		InputNum[a] = '\0';
 	}
-	i = 0;
+	int i = 0;
 	SetDlgItemText(hDlg, IDC_EDIT1, InputNum);
 	
 	printf("InputNum : %s \n", InputNum);
