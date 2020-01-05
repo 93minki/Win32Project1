@@ -16,6 +16,8 @@ WCHAR szTitle[MAX_LOADSTRING];                  // 제목 표시줄 텍스트입니다.
 WCHAR szWindowClass[MAX_LOADSTRING];            // 기본 창 클래스 이름입니다.
 
 char InputNum[MAX_STACK_SIZE];
+int np;
+
 char GetNum[MAX_STACK_SIZE];
 char totalSign[10];
 char arraytemp[MAX_STACK_SIZE];
@@ -123,36 +125,39 @@ char pop() {
 }
 
 void showNum(char num, HWND hDlg) {
-	push(num);
-	SetDlgItemText(hDlg, IDC_EDIT1, stack);
+	InputNum[np] = num;
+	np++;
+	SetDlgItemText(hDlg, IDC_EDIT1, InputNum);
 
 }
 
 void showDot(char dot, HWND hDlg) {
-	if (stack[top] == '.') {
+	if (InputNum[np] == '.') {
 		return;
 	}
 	else {
-		push(dot);
+		InputNum[np] = '.';
+		np++;
 	}
-	SetDlgItemText(hDlg, IDC_EDIT1, stack);
+	SetDlgItemText(hDlg, IDC_EDIT1, InputNum);
 }
 
 void showSign(char sign, HWND hDlg) {
-	if (stack[top] == '+' || stack[top] == '-' || stack[top] == '*' || stack[top] == '/') {
-		stack[top] = sign;
+	if (InputNum[np-1] == '+' || InputNum[np-1] == '-' || InputNum[np-1] == '*' || InputNum[np-1] == '/') {
+		InputNum[np-1] = sign;
 	}
 	else {
-		push(sign);
+		InputNum[np] = sign;
+		np++;
 	}
 	
-	SetDlgItemText(hDlg, IDC_EDIT1, stack);
+	SetDlgItemText(hDlg, IDC_EDIT1, InputNum);
 }
 // Get Stack Size 
 int GetStackSize() {
 	int StackSize;
-	for (int a = 0; a < sizeof(stack); a++) {
-		if (stack[a] == '\0') {
+	for (int a = 0; a < sizeof(InputNum); a++) {
+		if (InputNum[a] == '\0') {
 			StackSize = a;
 			return StackSize;
 		}
@@ -167,7 +172,7 @@ void InitTempArray() {
 }
 
 void showOutput(HWND hDlg) {
-	printf("Get Number : %s\n", stack);
+	printf("Get Number : %s\n", InputNum);
 	printf("Size of Stack : %d\n", GetStackSize());
 	int StackSize = GetStackSize();
 	int tn = 0;
@@ -176,29 +181,30 @@ void showOutput(HWND hDlg) {
 	// Search Stack
 	for (int i = 0; i < StackSize; i++) {
 		// if Stack Value is Sign 
-		if (stack[i] == '+' || stack[i] == '-' || stack[i] == '*' || stack[i] == '/') {
+		if (InputNum[i] == '+' || InputNum[i] == '-' || InputNum[i] == '*' || InputNum[i] == '/') {
 			Search_s = i;
 			for (int tp = 0; Search_n < Search_s; Search_n++, tp++) {
-				TempArray[tp] = stack[Search_n];
+				TempArray[tp] = InputNum[Search_n];
 			}
-			// Initialize TempArray
-			InitTempArray();
+			
 			// Show Error MessageBox if last stack element is Arithmetic Symbol
-			if (stack[i + 1] == '\0') {
+			if (InputNum[i + 1] == '\0') {
 				MessageBox(hDlg, "Wrong formula!!!", "Formula Error", MB_OK);
 			}
-			TempSign[ts] = stack[i];
+			TempSign[ts] = InputNum[i];
 			TempNum[tn] = atoi(TempArray) ;
 
+			// Initialize TempArray
+			InitTempArray();
 			Search_n = Search_s + 1;
 			tn++;
 			ts++;
 			
 		}
-		if (stack[i + 1] == '\0'){
+		if (InputNum[i + 1] == '\0'){
 			Search_s = i + 1;
 			for (int tp = 0; Search_n < Search_s; Search_n++, tp++) {
-				TempArray[tp] = stack[Search_n];
+				TempArray[tp] = InputNum[Search_n];
 			}
 			TempNum[tn] = atoi(TempArray);
 			InitTempArray();
@@ -208,18 +214,34 @@ void showOutput(HWND hDlg) {
 
 
 	for (int k = 0; k < MAX_STACK_SIZE; k++) {
-		printf("Number in Stack  : %d \n", TempNum[k]);
-		printf("Sign in Stack : %c \n", TempSign[k]);
 		if (TempNum[k] == '\0' && TempSign[k] == '\0')
 		{
 			break;
 		}
+		printf("Number in Stack  : %d \n", TempNum[k]);
+		printf("Sign in Stack : %c \n", TempSign[k]);
 	}
 	
 
 	
 
 
+}
+
+void rmArray(HWND hDlg) {
+	if (np == 0)
+	{
+		return;
+	}
+	InputNum[np-1] = '\0';
+	np--;
+	SetDlgItemText(hDlg, IDC_EDIT1, InputNum);
+	if (np == 0)
+	{
+		InputNum[np] = '0';
+		SetDlgItemText(hDlg, IDC_EDIT1, InputNum);
+		return;
+	}
 }
 
 void ClearArray(HWND hDlg) {
@@ -314,6 +336,10 @@ INT_PTR CALLBACK DlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 		case IDC_BUTTON17:	// +
 			printf("+\n");
 			showSign('+', hDlg);
+			break;
+		case IDC_BUTTON18:	// C
+			printf("C\n");
+			rmArray(hDlg);
 			break;
 		}
 		break;
