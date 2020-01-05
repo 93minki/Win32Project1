@@ -178,18 +178,19 @@ void showOutput(HWND hDlg) {
 		// if Stack Value is Sign 
 		if (stack[i] == '+' || stack[i] == '-' || stack[i] == '*' || stack[i] == '/') {
 			Search_s = i;
-			TempSign[ts] = stack[i];
 			for (int tp = 0; Search_n < Search_s; Search_n++, tp++) {
 				TempArray[tp] = stack[Search_n];
 			}
-			TempNum[tn] = atoi(TempArray);
 			// Initialize TempArray
 			InitTempArray();
+			// Show Error MessageBox if last stack element is Arithmetic Symbol
 			if (stack[i + 1] == '\0') {
 				MessageBox(hDlg, "Wrong formula!!!", "Formula Error", MB_OK);
 			}
-			Search_n = Search_s + 1 ;
-			
+			TempSign[ts] = stack[i];
+			TempNum[tn] = atoi(TempArray) ;
+
+			Search_n = Search_s + 1;
 			tn++;
 			ts++;
 			
