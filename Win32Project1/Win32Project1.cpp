@@ -249,40 +249,40 @@ void GetExp(HWND hDlg) {
 	int StackSize = GetStackSize();
 	int tn = 0;
 	int ts = 0;
-	int oldpr;
+	int oldpr = 4;
 	int pr;
 	int pop1;
 	int pop2;
 
-	int rst;
+	int rst = 0;
+	char opr;
 
 	char ttt;
 	for (int i = 0; i < StackSize; i++) {
 		// if Stack Value is Sign 
 		if (InputNum[i] == '+' || InputNum[i] == '-' || InputNum[i] == '*' || InputNum[i] == '/') {
-			pr = makePriority(InputNum[i]);
+			pr = makePriority(InputNum[i]);											// 현재 연산자의 우선순위를 구한다.
 			Search_s = i;
-			oldpr = pr;
 			for (int tp = 0; Search_n < Search_s; Search_n++, tp++) {
 				TempArray[tp] = InputNum[Search_n];
 			}
 			Search_n = Search_s + 1;
-			NumStackPush(atoi(TempArray));											//
-			if (StackSymbol[0] == NULL) {
-				SymStackPush(InputNum[i]);											//
+			NumStackPush(atoi(TempArray));											// 피연산자를 스택에 쌓는다.
+		
+			if (oldpr > pr) {														// 새로운 연산자 우선순위가 기존 우선순위보다 작을 경우
+				SymStackPush(InputNum[i]);											// 연산자를 연산자 스택에 쌓는다.
 				oldpr = pr;
 			}
-
-			if (pr < oldpr) {
-				continue;
-			}
-			else if (pr == oldpr) {
-				pop1 = NumStackPop();
+			else
+			{																		// 그 외, 새로운 연산자 우선순위가 같거나 클 경우	
+				pop1 = NumStackPop();												// 피 연산자 두개와 연산자 1개를 꺼낸다.
 				pop2 = NumStackPop();
-				switch (SymStackPop()) {
+				opr = SymStackPop();
+
+				switch (opr) {														// 꺼낸 연산자에 따라 연산을 수행하고 그 값을 rst에 저장.
 				case '+':
 					rst = pop2 + pop1;
-					NumStackPush(rst);
+					NumStackPush(rst);												// 그 값을 스택에 다시 쌓는다.
 					break;
 				case '-':
 					rst = pop2 - pop1;
@@ -299,38 +299,9 @@ void GetExp(HWND hDlg) {
 				}
 				printf("Result : %d\n", rst);
 			}
-			else if (pr > oldpr) {
-				pop1 = NumStackPop();
-				pop2 = NumStackPop();
-				switch (SymStackPop()) {
-				case '+':
-					rst = pop2 + pop1;
-					NumStackPush(rst);
-					break;
-				case '-':
-					rst = pop2 - pop1;
-					NumStackPush(rst);
-					break;
-				case '*':
-					rst = pop2 * pop1;
-					NumStackPush(rst);
-					break;
-				case '/':
-					rst = pop2 / pop1;
-					NumStackPush(rst);
-					break;
-				}
-				printf("Result : %d\n", rst);
-			}
-			//SymStackPush(InputNum[i]);
-			//
-			//CheckFormula(hDlg, i);
-			//InitTempArray();
-			//
-			//tn++;
-			//ts++;
-
+			SymStackPush(InputNum[i]);
 		}
+
 		if (InputNum[i + 1] == '\0') {
 			Search_s = i + 1;
 			for (int tp = 0; Search_n < Search_s; Search_n++, tp++) {
