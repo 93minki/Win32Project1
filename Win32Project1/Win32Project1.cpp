@@ -6,6 +6,7 @@
 #include "resource.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <stack>
 #define MAX_LOADSTRING 100
 
 #define MAX_STACK_SIZE 30
@@ -24,6 +25,8 @@ char arraytemp[MAX_STACK_SIZE];
 
 char TempArray[MAX_STACK_SIZE];
 char arrayclear[MAX_STACK_SIZE] = { '\0', };
+
+
 int TempNum[MAX_STACK_SIZE];
 char TempSign[MAX_STACK_SIZE];
 
@@ -35,17 +38,17 @@ int Search_n = 0;									// Search Number
 int Search_s = 0;									// Search Sign
 
 int StackNum[MAX_STACK_SIZE];									// Get Number in Stack
-char StackSign[MAX_STACK_SIZE];								// Get Sign in Stack
+int nsp = -1;
+char StackSymbol[MAX_STACK_SIZE];								// Get Sign in Stack
+int ssp = -1;
 
 int k = 0;
 int arraySize;
 int rstsum;
-int Temp1;
-int Temp2;
-int Temp3;
-double intoNum1;									// num1 배열을 int로 변환
-double intoNum2;									// num2 배열을 int로 변환
-double sum1;										// 결과 값
+
+int priority;
+
+int testString[MAX_STACK_SIZE];
 // 이 코드 모듈에 들어 있는 함수의 정방향 선언입니다.
 //ATOM                MyRegisterClass(HINSTANCE hInstance);
 BOOL                InitInstance(HINSTANCE, int);
@@ -88,8 +91,21 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
    return TRUE;
 }
 
-bool IsEmpty() {
-	if (top < 0) {
+struct oper {
+	int priority;
+	char op;
+}oper;
+
+bool IsNumStackEmpty() {
+	if (nsp < 0) {
+		return true;
+	}
+	else {
+		return false;
+	}
+}
+bool IsSymStackEmpty() {
+	if(ssp < 0) {
 		return true;
 	}
 	else {
@@ -97,8 +113,8 @@ bool IsEmpty() {
 	}
 }
 
-bool IsFull() {
-	if (top > MAX_STACK_SIZE) {
+bool IsNumStackFull() {
+	if (nsp > MAX_STACK_SIZE) {
 		return true;
 	}
 	else {
@@ -106,23 +122,51 @@ bool IsFull() {
 	}
 }
 
-void push(char value) {
-	if (IsFull() == true) {
-		printf("Stack is Full");
+bool IsSymStackFull() {
+	if (ssp > MAX_STACK_SIZE) {
+		return true;
 	}
 	else {
-		stack[++top] = value;
+		return false;
 	}
 }
 
-char pop() {
-	if (IsEmpty() == true) {
-		printf("Stack is Empty");
+void NumStackPush(char value) {
+	if (IsNumStackFull() == true) {
+		printf("Num Stack is Full!\n");
 	}
 	else {
-		return stack[top--];
+		StackNum[++nsp] = value;
 	}
 }
+
+void SymStackPush(char value) {
+	if (IsSymStackFull() == true) {
+		printf("Sym Stack is Full!\n");
+	}
+	else {
+		StackSymbol[++ssp] = value;
+	}
+}
+
+char NumStackPop() {
+	if (IsNumStackEmpty() == true) {
+		printf("Num Stack is Empty!\n");
+	}
+	else {
+		return StackNum[nsp--];
+	}
+}
+
+char SymStackPop() {
+	if (IsSymStackEmpty() == true) {
+		printf("Sym Stack is Empty!\n");
+	}
+	else {
+		return StackSymbol[ssp--];
+	}
+}
+
 
 void showNum(char num, HWND hDlg) {
 	InputNum[np] = num;
@@ -165,63 +209,182 @@ int GetStackSize() {
 }
 
 void InitTempArray() {
+	// Initialize Temp Array
 	for (int i = 0; i < sizeof(TempArray); i++) {
 		TempArray[i] = '\0';
 	}
 	
 }
 
-void showOutput(HWND hDlg) {
+void CheckFormula(HWND hDlg,int num) {
+	// Show Error MessageBox if last stack element is Arithmetic Symbol
+	if (InputNum[num + 1] == '\0') {
+		MessageBox(hDlg, "Wrong formula!!!", "Formula Error", MB_OK);
+	}
+}
+
+int makePriority(char symbol) {
+	switch (symbol) {
+	case '+':
+		priority = 2;
+		break;
+	case '-':
+		priority = 2;
+		break;
+	case '*':
+		priority = 1;
+		break;
+	case '/':
+		priority = 1;
+		break;
+
+	}
+	return priority;
+}
+
+void GetExp(HWND hDlg) {
+
 	printf("Get Number : %s\n", InputNum);
 	printf("Size of Stack : %d\n", GetStackSize());
 	int StackSize = GetStackSize();
 	int tn = 0;
 	int ts = 0;
-	
-	// Search Stack
+	int oldpr;
+	int pr;
+	int pop1;
+	int pop2;
+
+	int rst;
+
+	char ttt;
 	for (int i = 0; i < StackSize; i++) {
 		// if Stack Value is Sign 
 		if (InputNum[i] == '+' || InputNum[i] == '-' || InputNum[i] == '*' || InputNum[i] == '/') {
+			pr = makePriority(InputNum[i]);
 			Search_s = i;
+			oldpr = pr;
 			for (int tp = 0; Search_n < Search_s; Search_n++, tp++) {
 				TempArray[tp] = InputNum[Search_n];
 			}
-			
-			// Show Error MessageBox if last stack element is Arithmetic Symbol
-			if (InputNum[i + 1] == '\0') {
-				MessageBox(hDlg, "Wrong formula!!!", "Formula Error", MB_OK);
-			}
-			TempSign[ts] = InputNum[i];
-			TempNum[tn] = atoi(TempArray) ;
-
-			// Initialize TempArray
-			InitTempArray();
 			Search_n = Search_s + 1;
-			tn++;
-			ts++;
-			
+			NumStackPush(atoi(TempArray));											//
+			if (StackSymbol[0] == NULL) {
+				SymStackPush(InputNum[i]);											//
+				oldpr = pr;
+			}
+
+			if (pr < oldpr) {
+				continue;
+			}
+			else if (pr == oldpr) {
+				pop1 = NumStackPop();
+				pop2 = NumStackPop();
+				switch (SymStackPop()) {
+				case '+':
+					rst = pop2 + pop1;
+					NumStackPush(rst);
+					break;
+				case '-':
+					rst = pop2 - pop1;
+					NumStackPush(rst);
+					break;
+				case '*':
+					rst = pop2 * pop1;
+					NumStackPush(rst);
+					break;
+				case '/':
+					rst = pop2 / pop1;
+					NumStackPush(rst);
+					break;
+				}
+				printf("Result : %d\n", rst);
+			}
+			else if (pr > oldpr) {
+				pop1 = NumStackPop();
+				pop2 = NumStackPop();
+				switch (SymStackPop()) {
+				case '+':
+					rst = pop2 + pop1;
+					NumStackPush(rst);
+					break;
+				case '-':
+					rst = pop2 - pop1;
+					NumStackPush(rst);
+					break;
+				case '*':
+					rst = pop2 * pop1;
+					NumStackPush(rst);
+					break;
+				case '/':
+					rst = pop2 / pop1;
+					NumStackPush(rst);
+					break;
+				}
+				printf("Result : %d\n", rst);
+			}
+			//SymStackPush(InputNum[i]);
+			//
+			//CheckFormula(hDlg, i);
+			//InitTempArray();
+			//
+			//tn++;
+			//ts++;
+
 		}
-		if (InputNum[i + 1] == '\0'){
+		if (InputNum[i + 1] == '\0') {
 			Search_s = i + 1;
 			for (int tp = 0; Search_n < Search_s; Search_n++, tp++) {
 				TempArray[tp] = InputNum[Search_n];
 			}
-			TempNum[tn] = atoi(TempArray);
+			//TempNum[tn] = atoi(TempArray);
+			NumStackPush(atoi(TempArray));
 			InitTempArray();
-			
+
 		}
 	}
-
-
 	for (int k = 0; k < MAX_STACK_SIZE; k++) {
-		if (TempNum[k] == '\0' && TempSign[k] == '\0')
+		if (StackNum[k] == '\0' && StackSymbol[k] == '\0')
 		{
 			break;
 		}
-		printf("Number in Stack  : %d \n", TempNum[k]);
-		printf("Sign in Stack : %c \n", TempSign[k]);
+		printf("Number in Stack[%d] : %d \n", k, StackNum[k]);
+		printf("Sign in Stack[%d] : %c \n", k, StackSymbol[k]);
 	}
+}
+
+void showOutput(HWND hDlg) {
 	
+	int tmpnum1;
+	int tmpnum2;
+	char tmpsym1;
+	char tmpsym2;
+
+	GetExp(hDlg);
+	
+	//switch (TempSign[ts - 1]) {
+	//case '+':
+	//	restmp = TempNum[tn - 1] + TempNum[tn];
+	//	printf("Plus : %d\n", restmp);
+	//	break;
+	//case '-':
+	//	restmp = TempNum[tn - 1] - TempNum[tn];
+	//	printf("Sub : %d\n", restmp);
+	//	break;
+	//case '*':
+	//	restmp = TempNum[tn - 1] * TempNum[tn];
+	//	printf("Mul : %d\n", restmp);
+	//	break;
+	//case '/':
+	//	restmp = TempNum[tn - 1] / TempNum[tn];
+	//	printf("Div : %d\n", restmp);
+	//	break;
+	//}
+
+	tmpnum1 = NumStackPop();
+	tmpnum2 = NumStackPop();
+
+	tmpsym1 = SymStackPop();
+		
 
 	
 
